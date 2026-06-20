@@ -125,8 +125,17 @@ class FilesMixin:
     def get_settings(self):
         config = get_config()
         return {
-            'show_all_files': config.get('show_all_files', False)
+            'show_all_files': config.get('show_all_files', False),
+            'ra_username': config.get('ra_username', ''),
+            'ra_api_key': config.get('ra_api_key', '')
         }
+
+    def set_ra_credentials(self, username, api_key):
+        config = get_config()
+        config['ra_username'] = username
+        config['ra_api_key'] = api_key
+        save_config(config)
+        return True
 
     def toggle_show_all_files(self):
         config = get_config()

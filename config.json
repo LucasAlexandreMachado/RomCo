@@ -7,10 +7,12 @@
             "path": "/home/lucas/Downloads/ROMS"
         },
         {
-            "id": "60ae8947-da9e-4c5a-be66-818974fa628d",
-            "name": "Abacate",
-            "path": "/home/lucas/Downloads/ROMS/ROMS-PS2"
+            "id": "1aaa035e-cf70-4e23-a026-8824390e50ad",
+            "name": "Winfows",
+            "path": "/home/lucas/Documents/1BACKUPWINDOWS/Roms"
         }
     ],
-    "active_collection_id": "f2d451ad-5851-4506-b789-6b4ddc0f2858"
+    "active_collection_id": "1aaa035e-cf70-4e23-a026-8824390e50ad",
+    "ra_username": "sparck",
+    "ra_api_key": "mqJ3wYpaE92cUMjm0L8wKzf6RopwS1AG"
 }

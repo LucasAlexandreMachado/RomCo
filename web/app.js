@@ -546,8 +546,22 @@ if (btnSettings) {
   btnSettings.onclick = async () => {
     const settings = await window.pywebview.api.get_settings();
     toggleShowAll.checked = settings.show_all_files;
+    const userEl = document.getElementById('ra-username');
+    const keyEl = document.getElementById('ra-api-key');
+    if (userEl) userEl.value = settings.ra_username || '';
+    if (keyEl) keyEl.value = settings.ra_api_key || '';
     settingsModal.style.display = 'flex';
     lucide.createIcons();
+  };
+}
+
+const btnSaveRa = document.getElementById('btn-save-ra');
+if (btnSaveRa) {
+  btnSaveRa.onclick = async () => {
+    const user = document.getElementById('ra-username').value;
+    const key = document.getElementById('ra-api-key').value;
+    await window.pywebview.api.set_ra_credentials(user, key);
+    alert('RetroAchievements credentials saved!');
   };
 }
 
@@ -850,6 +864,8 @@ function updateDetailPanel() {
     heartIcon.onclick = null;
     actionsContainer.innerHTML = '';
     tagsContainer.innerHTML = '<button class="btn-add-tag" id="btn-add-tag"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add tag</button>';
+    const raContainer = document.getElementById('ra-container');
+    if (raContainer) raContainer.style.display = 'none';
     lucide.createIcons();
     return;
   }
@@ -878,6 +894,8 @@ function updateDetailPanel() {
     `;
     
     tagsContainer.innerHTML = '<button class="btn-add-tag" id="btn-add-tag"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add tag to all</button>';
+    const raContainer = document.getElementById('ra-container');
+    if (raContainer) raContainer.style.display = 'none';
     lucide.createIcons();
     
     document.getElementById('btn-add-tag').onclick = () => {
@@ -999,6 +1017,64 @@ function updateDetailPanel() {
       init();
     }
   };
+
+  const raContainer = document.getElementById('ra-container');
+  const raLoading = document.getElementById('ra-loading');
+  const raContent = document.getElementById('ra-content');
+  if (raContainer) {
+    raContainer.style.display = 'block';
+    raLoading.style.display = 'block';
+    raContent.style.display = 'none';
+    
+    window.pywebview.api.get_ra_game_info(rom.id).then(res => {
+      if (selectedIds.size !== 1 || Array.from(selectedIds)[0] !== rom.id) return;
+      
+      raLoading.style.display = 'none';
+      if (res.error) {
+        if (res.error === "Credentials not configured") {
+           raContainer.style.display = 'none';
+        } else {
+           raContent.innerHTML = `<div style="color:#FF453A; font-size:12px;">${res.error}</div>`;
+           raContent.style.display = 'flex';
+        }
+      } else {
+        const d = res.data;
+        const achievementsHtml = (d.Achievements && Object.keys(d.Achievements).length > 0) ? 
+           Object.values(d.Achievements).map(ach => `
+             <div style="display:flex; align-items:center; gap:8px; background:#2C2C2E; padding:8px; border-radius:6px; margin-bottom:4px;">
+               <img src="https://media.retroachievements.org/Badge/${ach.BadgeName}.png" style="width:32px; height:32px; border-radius:4px;" onerror="this.style.display='none'">
+               <div style="flex:1;">
+                 <div style="font-size:12px; font-weight:600; color:#fff; word-break:break-word;">${ach.Title}</div>
+                 <div style="font-size:10px; color:#8E8E93; word-break:break-word;">${ach.Description}</div>
+               </div>
+               <div style="font-size:12px; font-weight:600; color:#0A84FF;">${ach.Points}</div>
+             </div>
+           `).join('') : '<div style="font-size:12px; color:#8E8E93;">No achievements found.</div>';
+           
+        const gameImage = d.ImageBoxArt || d.ImageIcon;
+        const imageUrl = gameImage ? (gameImage.startsWith('http') ? gameImage : `https://media.retroachievements.org${gameImage.startsWith('/') ? '' : '/'}${gameImage}`) : null;
+        raContent.innerHTML = `
+          <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
+             ${imageUrl ? `<img src="${imageUrl}" style="width:48px;height:48px;border-radius:4px;object-fit:cover;" onerror="this.style.display='none'">` : ''}
+             <div style="flex:1;">
+               <div style="font-size:14px; font-weight:600; color:#fff;">${d.Title || 'Game'}</div>
+               <div style="font-size:12px; color:#8E8E93;">${d.ConsoleName || ''}</div>
+             </div>
+          </div>
+          <div style="max-height: 250px; overflow-y:auto; padding-right:4px;">
+             ${achievementsHtml}
+          </div>
+        `;
+        raContent.style.display = 'flex';
+      }
+    }).catch(err => {
+      if (selectedIds.size === 1 && Array.from(selectedIds)[0] === rom.id) {
+         raLoading.style.display = 'none';
+         raContent.innerHTML = `<div style="color:#FF453A; font-size:12px;">Error connecting to API.</div>`;
+         raContent.style.display = 'flex';
+      }
+    });
+  }
 }
 
 // Start
