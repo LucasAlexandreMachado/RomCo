@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RomCo</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Lucide Icons -->
+  <script src="lucide.min.js"></script>
+  <!-- Pywebview API is automatically injected -->
+</head>
+<body>
+  <div class="window">
+    <div class="sidebar">
+      <div class="sidebar-nav">
+        <div class="sidebar-section">
+        <div class="sidebar-item" id="btn-import"><i data-lucide="upload" style="width:16px;height:16px;margin-right:8px;"></i> Import Folder</div>
+        <div class="sidebar-item" id="btn-open-settings-sidebar"><i data-lucide="settings" style="width:16px;height:16px;margin-right:8px;"></i> Settings</div>
+      </div>  
+        <div class="sidebar-section">
+        <div class="sidebar-item active" id="btn-library">
+          <i data-lucide="library" style="width:16px;height:16px;"></i> All Library
+        </div>
+        <div class="sidebar-item" id="btn-favorites">
+          <i data-lucide="heart" style="width:16px;height:16px;color:#FF453A;"></i> Favorites
+        </div>
+      </div>
+
+        <div class="sidebar-section-header">DEVICES</div>
+        <div class="sidebar-item">MiyooMini+</div>
+
+        <div class="sidebar-section-header" style="display:flex; justify-content:space-between; align-items:center; padding-right: 16px;">
+          <span>SYSTEMS</span>
+          <i data-lucide="plus" style="width:14px;height:14px;cursor:pointer;color:#8E8E93;" id="btn-add-system" title="Create Folder"></i>
+        </div>
+        <div id="systems-list">
+          <!-- Systems will be injected here -->
+        </div>
+
+        <div class="sidebar-section-header">TAGS</div>
+        <div class="tags-container" id="tags-list">
+          <!-- Tags will be injected here -->
+        </div>
+      </div>
+      
+      <div class="sidebar-footer">
+        <div class="logo">Rom<span style="font-style: italic;">Co</span></div>
+        <div class="footer-icons" style="display:flex;gap:12px;">
+          <i data-lucide="settings" style="width:18px;height:18px;color:#8E8E93;cursor:pointer;" id="btn-settings" title="Settings"></i>
+          <i data-lucide="moon" style="width:18px;height:18px;color:#8E8E93;cursor:pointer;"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+        <h2 class="section-title" style="margin-bottom:0;">Games</h2>
+        <input type="text" id="search-input" placeholder="Search games..." style="padding: 8px 12px; border-radius: 8px; border: 1px solid #48484A; background: #1C1C1E; color: #fff; outline:none; width: 250px;">
+      </div>
+      <div class="rom-list" id="rom-list">
+        <!-- ROM items will be injected here by app.js -->
+      </div>
+    </div>
+    
+    <div class="detail-panel">
+      <div class="detail-header">
+        <div class="detail-title-row" style="display:flex; justify-content:space-between; align-items:center;">
+          <h2 id="detail-title" style="margin:0; font-size:20px; font-weight:600; color:#FFFFFF;">Select a ROM</h2>
+          <i data-lucide="heart" class="heart-icon" style="color:#8E8E93;cursor:pointer;"></i>
+        </div>
+        <div class="detail-subtitle" id="detail-system" style="font-size:13px; color:#8E8E93; margin-top:4px;">-</div>
+      </div>
+      
+      <div class="detail-meta">
+        <div class="meta-row">
+          <span class="meta-label">SIZE</span>
+          <span class="meta-value" id="detail-size">-</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">REGION</span>
+          <span class="meta-value" id="detail-region">-</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">IMPORTED ON</span>
+          <span class="meta-value">-</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">FILENAME</span>
+          <span class="meta-value">-</span>
+        </div>
+        
+        <div class="detail-actions" id="detail-actions" style="margin-top: 24px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <!-- Buttons injected here -->
+        </div>
+      </div>
+      
+      <div class="detail-tags" id="detail-tags-container" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <button class="btn-add-tag" id="btn-add-tag"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add tag</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="context-menu" class="context-menu">
+    <div id="cm-folder-options">
+      <div class="context-menu-item" id="cm-open">
+        <i data-lucide="external-link" style="width:14px;height:14px;"></i> Open Folder
+      </div>
+      <div class="context-menu-item" id="cm-rename">
+        <i data-lucide="pencil" style="width:14px;height:14px;"></i> Rename System
+      </div>
+      <div class="context-menu-item danger" id="cm-delete">
+        <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Delete System
+      </div>
+    </div>
+    <div id="cm-tag-options" style="display:none;">
+      <div class="context-menu-item" id="cm-tag-color">
+        <i data-lucide="palette" style="width:14px;height:14px;"></i> Change Color
+      </div>
+      <div class="context-menu-item danger" id="cm-tag-delete">
+        <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Delete Tag
+      </div>
+    </div>
+  </div>
+
+  <!-- Tag Modal -->
+  <div id="tag-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:#2C2C2E; padding:24px; border-radius:12px; width:320px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+      <h3 style="margin-bottom:16px; font-size:16px; font-weight:600;">Add Tag</h3>
+      <div style="font-size:12px; color:#8E8E93; margin-bottom:8px;">Select existing tag:</div>
+      <div id="existing-tags-list" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; max-height:100px; overflow-y:auto;">
+        <!-- Existing tags injected here -->
+      </div>
+      <div style="font-size:12px; color:#8E8E93; margin-bottom:8px;">Or create new:</div>
+      <input type="text" id="new-tag-input" placeholder="Type tag name..." style="width:100%; padding:10px; border-radius:6px; border:1px solid #48484A; background:#1C1C1E; color:#fff; margin-bottom:16px; outline:none;">
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button id="btn-cancel-tag" style="padding:8px 16px; border-radius:6px; background:#48484A; color:#fff; border:none; cursor:pointer; font-weight:500;">Cancel</button>
+        <button id="btn-save-tag" style="padding:8px 16px; border-radius:6px; background:#0A84FF; color:#fff; border:none; cursor:pointer; font-weight:500;">Add Tag</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:#2C2C2E; padding:24px; border-radius:12px; width:360px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+      <h3 style="margin-bottom:16px; font-size:18px; font-weight:600;"><i data-lucide="settings" style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Settings</h3>
+      
+      <div style="margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:14px; font-weight:500;">Show Unsupported Files</div>
+          <div style="font-size:12px; color:#8E8E93;">Display .pdf, .txt, .jpg and other files</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-show-files">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end;">
+        <button id="btn-close-settings" style="padding:8px 16px; border-radius:6px; background:#0A84FF; color:#fff; border:none; cursor:pointer; font-weight:500;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
