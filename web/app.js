@@ -32,12 +32,6 @@ const btnCancelTag = document.getElementById('btn-cancel-tag');
 const btnSaveTag = document.getElementById('btn-save-tag');
 let pendingTagIds = [];
 
-// Settings Modal State
-const settingsModal = document.getElementById('settings-modal');
-const toggleShowFiles = document.getElementById('toggle-show-files');
-const btnCloseSettings = document.getElementById('btn-close-settings');
-const btnOpenSettingsSidebar = document.getElementById('btn-open-settings-sidebar');
-
 document.addEventListener('click', () => {
   if (contextMenu) contextMenu.style.display = 'none';
 });
@@ -348,11 +342,17 @@ if (btnImport) {
   };
 }
 
-if (btnOpenSettingsSidebar) {
-  btnOpenSettingsSidebar.onclick = async () => {
+const settingsModal = document.getElementById('settings-modal');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+const toggleShowAll = document.getElementById('toggle-show-all');
+
+const btnSettings = document.getElementById('btn-settings');
+if (btnSettings) {
+  btnSettings.onclick = async () => {
     const settings = await window.pywebview.api.get_settings();
-    toggleShowFiles.checked = settings.show_all_files;
+    toggleShowAll.checked = settings.show_all_files;
     settingsModal.style.display = 'flex';
+    lucide.createIcons();
   };
 }
 
@@ -362,8 +362,8 @@ if (btnCloseSettings) {
   };
 }
 
-if (toggleShowFiles) {
-  toggleShowFiles.onchange = async () => {
+if (toggleShowAll) {
+  toggleShowAll.onchange = async () => {
     await window.pywebview.api.toggle_show_all_files();
     init();
   };

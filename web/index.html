@@ -4,6 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RomCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle-switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #48484A;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #30D158;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+  </style>
   <link rel="stylesheet" href="style.css">
   <!-- Lucide Icons -->
   <script src="lucide.min.js"></script>
@@ -13,10 +52,11 @@
   <div class="window">
     <div class="sidebar">
       <div class="sidebar-nav">
-        <div class="sidebar-section">
+        <!-- items -->
         <div class="sidebar-item" id="btn-import"><i data-lucide="upload" style="width:16px;height:16px;margin-right:8px;"></i> Import Folder</div>
-        <div class="sidebar-item" id="btn-open-settings-sidebar"><i data-lucide="settings" style="width:16px;height:16px;margin-right:8px;"></i> Settings</div>
-      </div>  
+        <div class="sidebar-item"><i data-lucide="tablet" style="width:16px;height:16px;margin-right:8px;"></i> Add device</div>
+        <div class="sidebar-item" id="btn-settings"><i data-lucide="settings" style="width:16px;height:16px;margin-right:8px;"></i> Settings</div>
+        
         <div class="sidebar-section">
         <div class="sidebar-item active" id="btn-library">
           <i data-lucide="library" style="width:16px;height:16px;"></i> All Library
@@ -46,7 +86,6 @@
       <div class="sidebar-footer">
         <div class="logo">Rom<span style="font-style: italic;">Co</span></div>
         <div class="footer-icons" style="display:flex;gap:12px;">
-          <i data-lucide="settings" style="width:18px;height:18px;color:#8E8E93;cursor:pointer;" id="btn-settings" title="Settings"></i>
           <i data-lucide="moon" style="width:18px;height:18px;color:#8E8E93;cursor:pointer;"></i>
         </div>
       </div>
@@ -122,7 +161,6 @@
     </div>
   </div>
 
-  <!-- Tag Modal -->
   <div id="tag-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center;">
     <div style="background:#2C2C2E; padding:24px; border-radius:12px; width:320px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
       <h3 style="margin-bottom:16px; font-size:16px; font-weight:600;">Add Tag</h3>
@@ -139,24 +177,24 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
   <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center;">
-    <div style="background:#2C2C2E; padding:24px; border-radius:12px; width:360px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
-      <h3 style="margin-bottom:16px; font-size:18px; font-weight:600;"><i data-lucide="settings" style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i>Settings</h3>
-      
-      <div style="margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;">
-        <div>
-          <div style="font-size:14px; font-weight:500;">Show Unsupported Files</div>
-          <div style="font-size:12px; color:#8E8E93;">Display .pdf, .txt, .jpg and other files</div>
+    <div style="background:#2C2C2E; padding:24px; border-radius:12px; width:340px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:600; margin:0;">Settings</h3>
+        <div id="btn-close-settings" style="cursor:pointer; display:flex;">
+          <i data-lucide="x" style="width:20px;height:20px;color:#8E8E93;"></i>
         </div>
-        <label class="switch">
-          <input type="checkbox" id="toggle-show-files">
-          <span class="slider round"></span>
-        </label>
       </div>
-
-      <div style="display:flex; justify-content:flex-end;">
-        <button id="btn-close-settings" style="padding:8px 16px; border-radius:6px; background:#0A84FF; color:#fff; border:none; cursor:pointer; font-weight:500;">Done</button>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-top:1px solid #48484A;">
+        <div>
+          <div style="font-size:14px; font-weight:500; color:#fff;">Show unsupported files</div>
+          <div style="font-size:12px; color:#8E8E93; margin-top:4px;">Include PDF, TXT and other non-ROM files</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-show-all">
+          <span class="slider"></span>
+        </label>
       </div>
     </div>
   </div>
