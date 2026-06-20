@@ -53,8 +53,6 @@
     <div class="sidebar">
       <div class="sidebar-nav">
         <!-- items -->
-        <div class="sidebar-item" id="btn-import"><i data-lucide="upload" style="width:16px;height:16px;margin-right:8px;"></i> Import Folder</div>
-        <div class="sidebar-item"><i data-lucide="tablet" style="width:16px;height:16px;margin-right:8px;"></i> Add device</div>
         <div class="sidebar-item" id="btn-settings"><i data-lucide="settings" style="width:16px;height:16px;margin-right:8px;"></i> Settings</div>
         
         <div class="sidebar-section">
@@ -66,12 +64,21 @@
         </div>
       </div>
 
-        <div class="sidebar-section-header">DEVICES</div>
-        <div class="sidebar-item">MiyooMini+</div>
+        <div class="sidebar-section-header" style="display:flex; justify-content:space-between; align-items:center; padding-right: 16px;">
+          <span>COLLECTIONS</span>
+          <div id="btn-add-collection" style="cursor:pointer; display:flex;" title="New Collection">
+            <i data-lucide="plus" style="width:14px;height:14px;color:#8E8E93;"></i>
+          </div>
+        </div>
+        <div id="collections-list">
+          <!-- Collections will be injected here -->
+        </div>
 
         <div class="sidebar-section-header" style="display:flex; justify-content:space-between; align-items:center; padding-right: 16px;">
           <span>SYSTEMS</span>
-          <i data-lucide="plus" style="width:14px;height:14px;cursor:pointer;color:#8E8E93;" id="btn-add-system" title="Create Folder"></i>
+          <div id="btn-add-system" style="cursor:pointer; display:flex;" title="Create Folder">
+            <i data-lucide="plus" style="width:14px;height:14px;color:#8E8E93;"></i>
+          </div>
         </div>
         <div id="systems-list">
           <!-- Systems will be injected here -->
@@ -92,10 +99,11 @@
     </div>
     
     <div class="main-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
-        <h2 class="section-title" style="margin-bottom:0;">Games</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding: 0 16px;">
+        <h2 class="section-title" style="margin:0; font-size:20px; font-weight:600; color:#FFFFFF;">Games</h2>
         <input type="text" id="search-input" placeholder="Search games..." style="padding: 8px 12px; border-radius: 8px; border: 1px solid #48484A; background: #1C1C1E; color: #fff; outline:none; width: 250px;">
       </div>
+      <div id="breadcrumbs-container" style="display:none; padding: 0 16px; margin-bottom: 12px; font-size: 13px; color: #8E8E93; align-items: center; gap: 6px;"></div>
       <div class="rom-list" id="rom-list">
         <!-- ROM items will be injected here by app.js -->
       </div>
@@ -105,7 +113,9 @@
       <div class="detail-header">
         <div class="detail-title-row" style="display:flex; justify-content:space-between; align-items:center;">
           <h2 id="detail-title" style="margin:0; font-size:20px; font-weight:600; color:#FFFFFF;">Select a ROM</h2>
-          <i data-lucide="heart" class="heart-icon" style="color:#8E8E93;cursor:pointer;"></i>
+          <div id="btn-toggle-favorite" style="cursor:pointer; display:flex;">
+            <i data-lucide="heart" class="heart-icon" style="color:#8E8E93;"></i>
+          </div>
         </div>
         <div class="detail-subtitle" id="detail-system" style="font-size:13px; color:#8E8E93; margin-top:4px;">-</div>
       </div>
@@ -140,9 +150,17 @@
   </div>
 
   <div id="context-menu" class="context-menu">
-    <div id="cm-folder-options">
+    <div id="cm-collection-options">
+      <div class="context-menu-item danger" id="cm-delete-collection">
+        <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Remove Collection
+      </div>
+    </div>
+    <div id="cm-folder-options" style="display:none;">
       <div class="context-menu-item" id="cm-open">
         <i data-lucide="external-link" style="width:14px;height:14px;"></i> Open Folder
+      </div>
+      <div class="context-menu-item" id="cm-new-subfolder">
+        <i data-lucide="folder-plus" style="width:14px;height:14px;"></i> New Subfolder
       </div>
       <div class="context-menu-item" id="cm-rename">
         <i data-lucide="pencil" style="width:14px;height:14px;"></i> Rename System
@@ -157,6 +175,33 @@
       </div>
       <div class="context-menu-item danger" id="cm-tag-delete">
         <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Delete Tag
+      </div>
+    </div>
+    <div id="cm-rom-options" style="display:none;">
+      <div class="context-menu-item" id="cm-rom-favorite">
+        <i data-lucide="heart" style="width:14px;height:14px;"></i> Toggle Favorite
+      </div>
+      <div class="context-menu-item" id="cm-rom-rename">
+        <i data-lucide="pencil" style="width:14px;height:14px;"></i> Rename
+      </div>
+      <div class="context-menu-item" id="cm-rom-zip-unzip">
+        <i data-lucide="archive-restore" style="width:14px;height:14px;"></i> Unzip
+      </div>
+      <div class="context-menu-item danger" id="cm-rom-delete">
+        <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Delete
+      </div>
+    </div>
+    <div id="cm-list-options" style="display:none;">
+      <div class="context-menu-item" id="cm-list-new-folder">
+        <i data-lucide="folder-plus" style="width:14px;height:14px;"></i> New Folder
+      </div>
+    </div>
+    <div id="cm-subfolder-options" style="display:none;">
+      <div class="context-menu-item" id="cm-subfolder-rename">
+        <i data-lucide="pencil" style="width:14px;height:14px;"></i> Rename Folder
+      </div>
+      <div class="context-menu-item danger" id="cm-subfolder-delete">
+        <i data-lucide="folder-minus" style="width:14px;height:14px;"></i> Delete Folder
       </div>
     </div>
   </div>

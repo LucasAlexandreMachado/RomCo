@@ -1,4 +1,16 @@
 {
-    "last_rom_path": "/home/lucas/Downloads/ROMS",
-    "show_all_files": false
+    "show_all_files": true,
+    "collections": [
+        {
+            "id": "f2d451ad-5851-4506-b789-6b4ddc0f2858",
+            "name": "Default Library",
+            "path": "/home/lucas/Downloads/ROMS"
+        },
+        {
+            "id": "60ae8947-da9e-4c5a-be66-818974fa628d",
+            "name": "Abacate",
+            "path": "/home/lucas/Downloads/ROMS/ROMS-PS2"
+        }
+    ],
+    "active_collection_id": "f2d451ad-5851-4506-b789-6b4ddc0f2858"
 }

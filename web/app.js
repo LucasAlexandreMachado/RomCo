@@ -12,6 +12,7 @@ let currentRoms = [];
 let selectedIds = new Set();
 let lastSelectedIndex = -1;
 let currentSystemFilter = null; 
+let currentSubpathFilter = "";
 let currentTagFilters = new Set();
 let currentAllTags = [];
 let currentTagColors = {};
@@ -36,11 +37,37 @@ document.addEventListener('click', () => {
   if (contextMenu) contextMenu.style.display = 'none';
 });
 
+if (romListEl) {
+  romListEl.oncontextmenu = (e) => {
+    e.preventDefault();
+    if (e.target.closest('.rom-row')) return;
+    
+    document.getElementById('cm-tag-options').style.display = 'none';
+    document.getElementById('cm-collection-options').style.display = 'none';
+    document.getElementById('cm-folder-options').style.display = 'none';
+    document.getElementById('cm-rom-options').style.display = 'none';
+    document.getElementById('cm-subfolder-options').style.display = 'none';
+    
+    if (currentSystemFilter && !currentShowFavorites) {
+      document.getElementById('cm-list-options').style.display = 'block';
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = `${e.pageX}px`;
+      contextMenu.style.top = `${e.pageY}px`;
+      lucide.createIcons();
+    }
+  };
+}
+
+window.isProcessing = false;
+
 window.addEventListener('focus', async () => {
+  if (window.isProcessing) return;
+  window.isProcessing = true;
   const changed = await window.pywebview.api.scan_folder();
   if (changed) {
     init();
   }
+  window.isProcessing = false;
 });
 
 btnCancelTag.onclick = () => {
@@ -81,6 +108,9 @@ function openTagModal(ids) {
 }
 
 async function init() {
+  const colData = await window.pywebview.api.get_collections();
+  renderCollections(colData);
+
   const summary = await window.pywebview.api.get_library_summary();
   if(librarySummaryEl) librarySummaryEl.innerText = summary;
   
@@ -131,6 +161,7 @@ function renderSidebarTags(tags) {
       currentContextFolder = null;
       
       document.getElementById('cm-folder-options').style.display = 'none';
+      document.getElementById('cm-collection-options').style.display = 'none';
       document.getElementById('cm-tag-options').style.display = 'block';
       
       contextMenu.style.display = 'block';
@@ -161,6 +192,7 @@ function renderSystems(systems) {
     
     item.onclick = () => {
       currentSystemFilter = sys.folder_name;
+      currentSubpathFilter = "";
       currentShowFavorites = false;
       document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
       item.classList.add('active');
@@ -177,6 +209,7 @@ function renderSystems(systems) {
       currentContextTag = null;
       
       document.getElementById('cm-tag-options').style.display = 'none';
+      document.getElementById('cm-collection-options').style.display = 'none';
       document.getElementById('cm-folder-options').style.display = 'block';
       
       const deleteBtn = document.getElementById('cm-delete');
@@ -229,6 +262,17 @@ document.getElementById('cm-open').onclick = async () => {
   contextMenu.style.display = 'none';
   if(currentContextFolder) {
     await window.pywebview.api.open_system_folder(currentContextFolder);
+  }
+};
+
+document.getElementById('cm-new-subfolder').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if(currentContextFolder) {
+    const newName = prompt(`Nova subpasta dentro de '${currentContextDisplay}':`);
+    if (newName && newName.trim() !== "") {
+      await window.pywebview.api.create_subfolder(currentContextFolder, newName.trim());
+      init();
+    }
   }
 };
 
@@ -287,14 +331,115 @@ document.getElementById('cm-tag-delete').onclick = async () => {
   }
 };
 
+document.getElementById('cm-subfolder-rename').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if (currentContextFolder && currentContextDisplay) {
+    window.isProcessing = true;
+    const newName = prompt(`Digite o novo nome para a pasta '${currentContextDisplay}':`, currentContextDisplay);
+    if (newName && newName.trim() !== "" && newName.trim() !== currentContextDisplay) {
+      await window.pywebview.api.rename_subfolder(currentContextFolder, currentContextDisplay, newName.trim());
+      init();
+    }
+    window.isProcessing = false;
+  }
+};
+
+document.getElementById('cm-subfolder-delete').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if (currentContextFolder && currentContextDisplay) {
+    window.isProcessing = true;
+    if (confirm(`Deseja excluir a pasta '${currentContextDisplay}'?\n\nOs arquivos dentro dela não serão excluídos, mas sim movidos para a pasta acima.`)) {
+      await window.pywebview.api.delete_subfolder(currentContextFolder, currentContextDisplay);
+      init();
+    }
+    window.isProcessing = false;
+  }
+};
+
+document.getElementById('cm-rom-favorite').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if(selectedIds.size > 0) {
+      for (const id of selectedIds) {
+          await window.pywebview.api.toggle_favorite(id);
+      }
+      init();
+  }
+};
+
+document.getElementById('cm-rom-rename').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if(selectedIds.size === 1) {
+      window.isProcessing = true;
+      const id = Array.from(selectedIds)[0];
+      const rom = currentRoms.find(r => r.id === id);
+      if(rom) {
+          const newName = prompt("Digite o novo nome do jogo:", rom.name);
+          if(newName !== null && newName.trim() !== "") {
+              await window.pywebview.api.rename_rom(id, newName.trim());
+              init();
+          }
+      }
+      window.isProcessing = false;
+  }
+};
+
+document.getElementById('cm-rom-zip-unzip').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if(selectedIds.size > 0) {
+      window.isProcessing = true;
+      const firstRom = currentRoms.find(r => r.id === Array.from(selectedIds)[0]);
+      if (firstRom) {
+          const ext = firstRom.filename.split('.').pop().toLowerCase();
+          const isZip = ext === 'zip' || ext === '7z';
+          if (isZip) {
+              await window.pywebview.api.unzip_roms(Array.from(selectedIds));
+          } else {
+              await window.pywebview.api.zip_roms(Array.from(selectedIds));
+          }
+          init();
+      }
+      window.isProcessing = false;
+  }
+};
+
+document.getElementById('cm-rom-delete').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if(selectedIds.size > 0) {
+      window.isProcessing = true;
+      if(confirm(`Deseja realmente deletar do disco ${selectedIds.size} arquivo(s)?`)) {
+          const ids = Array.from(selectedIds);
+          await window.pywebview.api.delete_roms(ids);
+          selectedIds.clear();
+          init();
+      }
+      window.isProcessing = false;
+  }
+};
+
+document.getElementById('cm-list-new-folder').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if(currentSystemFilter) {
+      window.isProcessing = true;
+      const newName = prompt(`Nova subpasta dentro de '${currentSystemFilter}${currentSubpathFilter ? '/' + currentSubpathFilter : ''}':`);
+      if (newName && newName.trim() !== "") {
+        const basePath = currentSystemFilter + (currentSubpathFilter ? '/' + currentSubpathFilter : '');
+        await window.pywebview.api.create_subfolder(basePath, newName.trim());
+        init();
+      }
+      window.isProcessing = false;
+  }
+};
+
 const btnAddSystem = document.getElementById('btn-add-system');
 if (btnAddSystem) {
   btnAddSystem.onclick = async () => {
+    window.isProcessing = true;
     const name = prompt("Digite o nome da nova pasta (Sistema):");
     if (name && name.trim()) {
       await window.pywebview.api.create_system(name.trim());
       init();
     }
+    window.isProcessing = false;
   };
 }
 
@@ -332,14 +477,64 @@ if (searchInput) {
   };
 }
 
-const btnImport = document.getElementById('btn-import');
-if (btnImport) {
-  btnImport.onclick = async () => {
-    const success = await window.pywebview.api.choose_folder();
-    if (success) {
-      init();
+const btnAddCollection = document.getElementById('btn-add-collection');
+if (btnAddCollection) {
+  btnAddCollection.onclick = async () => {
+    const name = prompt("Name for new Collection:");
+    if (name && name.trim()) {
+      const success = await window.pywebview.api.add_collection(name.trim());
+      if (success) init();
     }
   };
+}
+
+document.getElementById('cm-delete-collection').onclick = async () => {
+  contextMenu.style.display = 'none';
+  if (currentContextFolder) {
+    if (confirm("Remove this collection? (Files on disk won't be deleted)")) {
+      await window.pywebview.api.remove_collection(currentContextFolder);
+      init();
+    }
+  }
+};
+
+function renderCollections(data) {
+  const listEl = document.getElementById('collections-list');
+  if(!listEl) return;
+  listEl.innerHTML = '';
+  
+  data.collections.forEach(col => {
+    const item = document.createElement('div');
+    const isActive = data.active_collection_id === col.id;
+    item.className = `sidebar-item ${isActive ? 'active' : ''}`;
+    
+    item.innerHTML = `<i data-lucide="database" style="width:16px;height:16px;margin-right:8px;color:${isActive ? '#30D158' : '#8E8E93'}"></i> <span>${col.name}</span>`;
+    
+    item.onclick = async () => {
+      if (!isActive) {
+        await window.pywebview.api.set_active_collection(col.id);
+        init();
+      }
+    };
+    
+    item.oncontextmenu = (e) => {
+      e.preventDefault();
+      currentContextFolder = col.id;
+      
+      document.getElementById('cm-folder-options').style.display = 'none';
+      document.getElementById('cm-tag-options').style.display = 'none';
+      document.getElementById('cm-collection-options').style.display = 'block';
+      
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = `${e.pageX}px`;
+      contextMenu.style.top = `${e.pageY}px`;
+      lucide.createIcons();
+    };
+    
+    listEl.appendChild(item);
+  });
+  
+  lucide.createIcons();
 }
 
 const settingsModal = document.getElementById('settings-modal');
@@ -369,31 +564,159 @@ if (toggleShowAll) {
   };
 }
 
-function renderRoms(roms) {
+async function renderRoms(roms) {
   if(!romListEl) return;
   romListEl.innerHTML = '';
   
+  let isExplorerMode = currentSystemFilter && !currentShowFavorites && currentTagFilters.size === 0 && currentSearchQuery === "";
+  let filesToShow = [];
+  let foldersToShow = new Set();
   let displayedRoms = roms;
-  if (currentSystemFilter) {
-      displayedRoms = displayedRoms.filter(r => r.folder_name === currentSystemFilter);
-  }
-  if (currentShowFavorites) {
-      displayedRoms = displayedRoms.filter(r => r.is_favorite);
-  }
-  if (currentTagFilters.size > 0) {
-      displayedRoms = displayedRoms.filter(r => {
-        if (!r.tags) return false;
-        return Array.from(currentTagFilters).every(filter => r.tags.includes(filter));
+  
+  if (isExplorerMode) {
+      const basePath = currentSystemFilter === 'Uncategorized' ? (currentSubpathFilter ? 'Uncategorized/' + currentSubpathFilter + '/' : 'Uncategorized/') : (currentSystemFilter + (currentSubpathFilter ? '/' + currentSubpathFilter : '') + '/');
+      
+      const realDirs = await window.pywebview.api.get_subdirectories(basePath);
+      realDirs.forEach(d => foldersToShow.add(d));
+      
+      roms.forEach(r => {
+          if (r.folder_name === currentSystemFilter) {
+              if (r.filename.startsWith(basePath)) {
+                  const relPath = r.filename.substring(basePath.length);
+                  if (relPath.includes('/')) {
+                      foldersToShow.add(relPath.split('/')[0]);
+                  } else {
+                      filesToShow.push(r);
+                  }
+              }
+          }
       });
-  }
-  if (currentSearchQuery !== "") {
-      displayedRoms = displayedRoms.filter(r => r.name.toLowerCase().includes(currentSearchQuery) || r.filename.toLowerCase().includes(currentSearchQuery));
+      displayedRoms = filesToShow;
+  } else {
+      if (currentSystemFilter) displayedRoms = displayedRoms.filter(r => r.folder_name === currentSystemFilter);
+      if (currentShowFavorites) displayedRoms = displayedRoms.filter(r => r.is_favorite);
+      if (currentTagFilters.size > 0) displayedRoms = displayedRoms.filter(r => r.tags && Array.from(currentTagFilters).every(f => r.tags.includes(f)));
+      if (currentSearchQuery !== "") displayedRoms = displayedRoms.filter(r => r.name.toLowerCase().includes(currentSearchQuery) || r.filename.toLowerCase().includes(currentSearchQuery));
   }
   
-  // Need an element to update count, wait index.html no longer has total-roms-count there. 
-  // Wait, I removed the count from the top of the sidebar. Let's gracefully handle if it's missing.
   const countEl = document.getElementById('total-roms-count');
   if (countEl) countEl.innerText = displayedRoms.length;
+  
+  const breadcrumbsEl = document.getElementById('breadcrumbs-container');
+  if (breadcrumbsEl) {
+    if (isExplorerMode) {
+        breadcrumbsEl.style.display = 'flex';
+        breadcrumbsEl.innerHTML = '';
+        const parts = currentSubpathFilter ? currentSubpathFilter.split('/') : [];
+        
+        const createCrumb = (text, path, isLast) => {
+            const span = document.createElement('span');
+            span.innerText = text;
+            if (!isLast) {
+                span.style.cursor = 'pointer';
+                span.style.color = '#0A84FF';
+                span.onclick = () => {
+                    currentSubpathFilter = path;
+                    renderRoms(currentRoms);
+                };
+                const arrow = document.createElement('span');
+                arrow.innerText = ' > ';
+                arrow.style.color = '#48484A';
+                
+                breadcrumbsEl.appendChild(span);
+                breadcrumbsEl.appendChild(arrow);
+            } else {
+                span.style.color = '#FFFFFF';
+                span.style.fontWeight = '600';
+                breadcrumbsEl.appendChild(span);
+            }
+        };
+        
+        createCrumb(currentSystemFilter, "", parts.length === 0);
+        let accumPath = "";
+        parts.forEach((p, i) => {
+            accumPath = accumPath ? accumPath + '/' + p : p;
+            createCrumb(p, accumPath, i === parts.length - 1);
+        });
+    } else {
+        breadcrumbsEl.style.display = 'none';
+    }
+  }
+
+  if (isExplorerMode) {
+    Array.from(foldersToShow).sort().forEach(folderName => {
+      const row = document.createElement('div');
+      row.className = 'rom-row';
+      row.style.cursor = 'pointer';
+      
+      row.innerHTML = `
+        <div class="system-badge" style="background:transparent; display:flex; justify-content:center; align-items:center;"><i data-lucide="folder" style="color:#0A84FF;width:16px;height:16px;"></i></div>
+        <div style="flex:1; display:flex; align-items:center;">
+          <span class="rom-name" style="font-weight:600;">${folderName}</span>
+        </div>
+      `;
+      
+      row.ondblclick = () => {
+        currentSubpathFilter = currentSubpathFilter ? currentSubpathFilter + '/' + folderName : folderName;
+        renderRoms(currentRoms);
+      };
+      
+      row.ondragover = (e) => {
+        e.preventDefault();
+        row.classList.add('drag-over');
+      };
+      
+      row.ondragleave = (e) => {
+        row.classList.remove('drag-over');
+      };
+      
+      row.ondrop = async (e) => {
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        
+        const data = e.dataTransfer.getData("text/plain");
+        if (data) {
+          const ids = JSON.parse(data);
+          const targetSystem = currentSystemFilter + (currentSubpathFilter ? '/' + currentSubpathFilter : '') + '/' + folderName;
+          const success = await window.pywebview.api.move_roms(ids, targetSystem);
+          if (success) {
+            selectedIds.clear();
+            init();
+          }
+        }
+      };
+      
+      row.oncontextmenu = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (selectedIds.size > 0) {
+          selectedIds.clear();
+          renderRoms(currentRoms);
+          updateDetailPanel();
+        }
+        
+        document.getElementById('cm-folder-options').style.display = 'none';
+        document.getElementById('cm-collection-options').style.display = 'none';
+        document.getElementById('cm-tag-options').style.display = 'none';
+        document.getElementById('cm-list-options').style.display = 'none';
+        document.getElementById('cm-rom-options').style.display = 'none';
+        
+        const subMenu = document.getElementById('cm-subfolder-options');
+        subMenu.style.display = 'block';
+        
+        currentContextFolder = currentSystemFilter + (currentSubpathFilter ? '/' + currentSubpathFilter : '');
+        currentContextDisplay = folderName;
+        
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = `${e.pageX}px`;
+        contextMenu.style.top = `${e.pageY}px`;
+        lucide.createIcons();
+      };
+      
+      romListEl.appendChild(row);
+    });
+  }
   
   displayedRoms.forEach((rom, index) => {
     const row = document.createElement('div');
@@ -428,11 +751,19 @@ function renderRoms(roms) {
                  '</div>';
     }
       
+    const parts = rom.filename.split('/');
+    let subfolderBadge = '';
+    if (parts.length > 2) {
+      const subpath = parts.slice(1, -1).join('/');
+      subfolderBadge = `<span style="background:#48484A; color:#EBEBF5; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:6px; display:inline-flex; align-items:center;"><i data-lucide="folder" style="width:10px;height:10px;margin-right:4px;"></i>${subpath}</span>`;
+    }
+
     row.innerHTML = `
       <div class="system-badge ${badgeClass}">${ext}</div>
       <div style="flex:1; display:flex; align-items:center;">
         ${heartHTML}
         <span class="rom-name">${rom.name}</span>
+        ${subfolderBadge}
         ${rom.region !== 'Unknown' ? `<span class="rom-region">${rom.region}</span>` : ''}
         ${tagsHTML}
       </div>
@@ -460,6 +791,41 @@ function renderRoms(roms) {
       }
       renderRoms(currentRoms);
       updateDetailPanel();
+    };
+    
+    row.oncontextmenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!selectedIds.has(rom.id)) {
+        selectedIds.clear();
+        selectedIds.add(rom.id);
+        renderRoms(currentRoms);
+        updateDetailPanel();
+      }
+      
+      document.getElementById('cm-folder-options').style.display = 'none';
+      document.getElementById('cm-collection-options').style.display = 'none';
+      document.getElementById('cm-tag-options').style.display = 'none';
+      document.getElementById('cm-list-options').style.display = 'none';
+      document.getElementById('cm-subfolder-options').style.display = 'none';
+      
+      const romMenu = document.getElementById('cm-rom-options');
+      romMenu.style.display = 'block';
+      
+      const ext = rom.filename.split('.').pop().toLowerCase();
+      const isZip = ext === 'zip' || ext === '7z';
+      const unzipBtn = document.getElementById('cm-rom-zip-unzip');
+      if (isZip) {
+          unzipBtn.innerHTML = '<i data-lucide="archive-restore" style="width:14px;height:14px;"></i> Unzip';
+      } else {
+          unzipBtn.innerHTML = '<i data-lucide="file-archive" style="width:14px;height:14px;"></i> Zip';
+      }
+      
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = `${e.pageX}px`;
+      contextMenu.style.top = `${e.pageY}px`;
+      lucide.createIcons();
     };
     
     romListEl.appendChild(row);
@@ -553,10 +919,13 @@ function updateDetailPanel() {
   heartIcon.style.color = rom.is_favorite ? '#FF453A' : '#8E8E93';
   heartIcon.setAttribute('fill', rom.is_favorite ? '#FF453A' : 'none');
   
-  heartIcon.onclick = async () => {
-    await window.pywebview.api.toggle_favorite(rom.id);
-    init();
-  };
+  const favoriteBtn = document.getElementById('btn-toggle-favorite');
+  if (favoriteBtn) {
+    favoriteBtn.onclick = async () => {
+      await window.pywebview.api.toggle_favorite(rom.id);
+      init();
+    };
+  }
   
   const ext = rom.filename.split('.').pop().toLowerCase();
   const isZip = ext === 'zip' || ext === '7z';
@@ -603,7 +972,7 @@ function updateDetailPanel() {
   };
   
   document.getElementById('btn-rename').onclick = async () => {
-    const baseName = rom.filename.replace(/\.[^/.]+$/, ""); 
+    const baseName = rom.filename.split('/').pop().replace(/\.[^/.]+$/, ""); 
     const newName = prompt("Digite o novo nome para o arquivo (sem extensão):", baseName);
     if (newName && newName.trim() !== "" && newName.trim() !== baseName) {
       await window.pywebview.api.rename_rom(rom.id, newName.trim());
